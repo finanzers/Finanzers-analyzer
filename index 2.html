@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Análisis de Acciones · finanzers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,400;0,600;0,700;0,900;1,700;1,900&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --black:   #000000;
+      --black2:  #0d0d0d;
+      --black3:  #111111;
+      --black4:  #1a1a1a;
+      --black5:  #222222;
+      --orange:  #FF6B00;
+      --orange2: #FF8C00;
+      --orange3: #FF5500;
+      --text:    #FFFFFF;
+      --muted:   #888888;
+      --faint:   #444444;
+      --stroke:  #2a2a2a;
+      --green:   #22c55e;
+      --red:     #ef4444;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      min-height: 100vh;
+      background: var(--black);
+      font-family: 'Barlow', sans-serif;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* ── HERO ── */
+    .hero {
+      position: relative;
+      padding: 48px 24px 52px;
+      text-align: center;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 55% at 50% 110%, rgba(255,107,0,.2) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, var(--orange), transparent);
+    }
+
+    .logo {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-style: italic; font-weight: 900;
+      font-size: 48px; color: var(--orange);
+      letter-spacing: -0.02em; line-height: 1;
+      margin-bottom: 28px;
+      text-shadow: 0 0 40px rgba(255,107,0,.35);
+      display: block;
+    }
+
+    h1 {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-weight: 900; font-size: clamp(36px, 6vw, 62px);
+      line-height: 0.95; letter-spacing: -0.02em;
+      text-transform: uppercase; color: var(--text);
+      margin-bottom: 14px;
+    }
+    h1 span { color: var(--orange); font-style: italic; }
+
+    .hero-sub {
+      font-size: 15px; color: var(--muted);
+      line-height: 1.6; max-width: 400px; margin: 0 auto;
+    }
+
+    /* ── SEARCH BOX ── */
+    .search-wrap {
+      max-width: 560px; margin: 36px auto 0;
+      padding: 0 20px;
+    }
+
+    .search-box {
+      display: flex; gap: 0;
+      background: var(--black3);
+      border: 1px solid var(--stroke);
+      border-radius: 4px;
+      overflow: hidden;
+      transition: border-color .2s;
+    }
+    .search-box:focus-within {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(255,107,0,.15);
+    }
+
+    .ticker-input {
+      flex: 1; padding: 18px 20px;
+      background: transparent; border: none; outline: none;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px; font-weight: 700;
+      color: var(--text); letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .ticker-input::placeholder {
+      color: var(--faint); font-weight: 600; letter-spacing: .08em;
+    }
+
+    .search-btn {
+      padding: 18px 28px;
+      background: var(--orange); border: none; cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 15px; font-weight: 900;
+      font-style: italic; letter-spacing: .06em;
+      text-transform: uppercase; color: var(--black);
+      transition: background .15s;
+      white-space: nowrap;
+    }
+    .search-btn:hover { background: var(--orange2); }
+    .search-btn:disabled { background: var(--faint); cursor: not-allowed; color: #888; }
+
+    .examples {
+      display: flex; gap: 8px; flex-wrap: wrap;
+      justify-content: center; margin-top: 14px;
+    }
+    .ex-tag {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px; font-weight: 700; letter-spacing: .1em;
+      color: var(--faint); border: 1px solid var(--stroke);
+      border-radius: 3px; padding: 4px 10px; cursor: pointer;
+      transition: all .15s; text-transform: uppercase;
+    }
+    .ex-tag:hover { color: var(--orange); border-color: var(--orange); }
+
+    /* ── MAIN ── */
+    .main { max-width: 720px; margin: 0 auto; padding: 32px 20px 80px; }
+
+    /* ── LOADING ── */
+    #loading {
+      display: none; text-align: center; padding: 60px 20px;
+    }
+    .loading-ticker {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 52px; font-weight: 900; font-style: italic;
+      color: var(--orange); letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .loading-msg {
+      font-size: 14px; color: var(--muted); margin-bottom: 32px;
+    }
+    .loading-bar {
+      width: 200px; height: 3px;
+      background: var(--black4); border-radius: 2px;
+      margin: 0 auto; overflow: hidden;
+    }
+    .loading-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--orange3), var(--orange2));
+      border-radius: 2px;
+      animation: loadbar 3s ease-in-out infinite;
+    }
+    @keyframes loadbar {
+      0%   { width: 0%; }
+      50%  { width: 75%; }
+      90%  { width: 92%; }
+      100% { width: 92%; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: .5; }
+    }
+
+    /* ── REPORT ── */
+    #report { display: none; }
+
+    /* Report header */
+    .report-header {
+      background: var(--black3);
+      border: 1px solid var(--stroke);
+      border-radius: 4px; padding: 28px;
+      margin-bottom: 14px; position: relative;
+      overflow: hidden;
+    }
+    .report-header::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: linear-gradient(90deg, var(--orange), var(--orange2), transparent);
+    }
+    .report-meta {
+      display: flex; justify-content: space-between;
+      align-items: flex-start; flex-wrap: wrap; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .report-ticker-big {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 52px; font-weight: 900; font-style: italic;
+      color: var(--orange); letter-spacing: -0.02em; line-height: 1;
+    }
+    .report-company {
+      font-size: 14px; color: var(--muted); margin-top: 4px;
+    }
+    .report-date {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px; font-weight: 700; letter-spacing: .15em;
+      color: var(--faint); text-transform: uppercase; text-align: right;
+    }
+
+    /* Sentiment badge */
+    .sentiment-badge {
+      display: inline-flex; align-items: center; gap: 10px;
+      padding: 12px 20px;
+      border-radius: 4px; border: 1px solid;
+      margin-bottom: 8px;
+    }
+    .sentiment-icon { font-size: 24px; }
+    .sentiment-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px; font-weight: 900;
+      letter-spacing: .04em; text-transform: uppercase;
+    }
+    .sentiment-score {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px; font-weight: 700; letter-spacing: .1em;
+      opacity: .7; margin-left: 4px;
+    }
+
+    /* Score bar */
+    .score-row {
+      display: flex; align-items: center; gap: 12px; margin-top: 14px;
+    }
+    .score-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 700; letter-spacing: .15em;
+      color: var(--faint); text-transform: uppercase; width: 70px; flex-shrink: 0;
+    }
+    .score-bar {
+      flex: 1; height: 6px; background: var(--black5);
+      border-radius: 3px; overflow: hidden;
+    }
+    .score-fill { height: 100%; border-radius: 3px; transition: width 1s ease; }
+    .score-val {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px; font-weight: 900; width: 36px; text-align: right;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--black3);
+      border: 1px solid var(--stroke);
+      border-radius: 4px; padding: 24px 26px;
+      margin-bottom: 14px; position: relative;
+    }
+    .card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0; height: 2px;
+      background: linear-gradient(90deg, var(--orange), transparent);
+      border-radius: 4px 4px 0 0;
+    }
+    .card-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 700; letter-spacing: .2em;
+      color: var(--orange); text-transform: uppercase; margin-bottom: 16px;
+    }
+
+    /* Veredicto - the big hook */
+    .verdict-text {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: clamp(22px, 4vw, 30px); font-weight: 900;
+      line-height: 1.15; color: var(--text);
+      letter-spacing: -0.01em;
+    }
+
+    /* Body text */
+    .body-text {
+      font-size: 15px; line-height: 1.75;
+      color: #ccc; font-weight: 400;
+    }
+    .body-text p { margin-bottom: 14px; }
+    .body-text p:last-child { margin-bottom: 0; }
+    .body-text strong { color: var(--text); font-weight: 600; }
+    .body-text em { color: var(--orange); font-style: normal; font-weight: 600; }
+
+    /* News pills */
+    .news-list { display: flex; flex-direction: column; gap: 10px; }
+    .news-item {
+      background: var(--black4); border: 1px solid var(--stroke);
+      border-radius: 4px; padding: 14px 16px;
+      display: flex; gap: 12px; align-items: flex-start;
+    }
+    .news-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      flex-shrink: 0; margin-top: 6px;
+    }
+    .news-headline {
+      font-size: 13px; color: #bbb; line-height: 1.5; flex: 1;
+    }
+    .news-source {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      color: var(--faint); text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    /* Catalysts grid */
+    .catalysts-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    }
+    .catalyst-item {
+      background: var(--black4); border-radius: 4px;
+      border: 1px solid var(--stroke); padding: 14px;
+    }
+    .catalyst-type {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 9px; font-weight: 700; letter-spacing: .18em;
+      text-transform: uppercase; margin-bottom: 6px;
+    }
+    .catalyst-text { font-size: 12px; color: #aaa; line-height: 1.5; }
+
+    /* CTA engagement */
+    .cta-card {
+      background: rgba(255,107,0,.08);
+      border: 1px solid rgba(255,107,0,.3);
+      border-radius: 4px; padding: 24px 26px;
+      margin-bottom: 14px;
+    }
+    .cta-question {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 22px; font-weight: 900;
+      color: var(--text); line-height: 1.2; margin-bottom: 16px;
+    }
+    .cta-question span { color: var(--orange); font-style: italic; }
+
+    /* New search btn */
+    .new-search-btn {
+      width: 100%; padding: 18px;
+      background: var(--orange); border: none; cursor: pointer;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 18px; font-weight: 900; font-style: italic;
+      letter-spacing: .05em; text-transform: uppercase;
+      color: var(--black); border-radius: 4px;
+      box-shadow: 0 4px 24px rgba(255,107,0,.28);
+      transition: background .15s, transform .15s;
+    }
+    .new-search-btn:hover { background: var(--orange2); transform: translateY(-1px); }
+
+    /* ── Error ── */
+    #error {
+      display: none; text-align: center; padding: 40px 20px;
+    }
+    .error-icon { font-size: 40px; margin-bottom: 14px; }
+    .error-msg {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 20px; font-weight: 900; color: var(--red);
+      text-transform: uppercase; margin-bottom: 8px;
+    }
+    .error-sub { font-size: 13px; color: var(--muted); }
+
+    /* ── Animations ── */
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .anim { animation: slideUp .45s cubic-bezier(.22,.68,0,1.1) both; }
+
+    /* ── Disclaimer ── */
+    .disclaimer {
+      text-align: center; font-size: 11px;
+      color: var(--faint); margin-top: 20px; line-height: 1.7;
+    }
+
+    @media (max-width: 520px) {
+      .catalysts-grid { grid-template-columns: 1fr; }
+      .report-ticker-big { font-size: 40px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HERO -->
+  <div class="hero">
+    <span class="logo">finanzers</span>
+    <h1>Análisis de<br><span>acciones con IA</span></h1>
+    <p class="hero-sub">Introduce un ticker. Te digo lo que pienso de verdad, sin filtros ni postureo.</p>
+  </div>
+
+  <!-- SEARCH -->
+  <div class="search-wrap">
+    <div class="search-box">
+      <input
+        class="ticker-input"
+        id="ticker-input"
+        type="text"
+        placeholder="AAPL, NVDA, TSLA..."
+        maxlength="10"
+        autocomplete="off"
+        autocorrect="off"
+        spellcheck="false"
+        onkeydown="if(event.key==='Enter') analyze()"
+      />
+      <button class="search-btn" id="search-btn" onclick="analyze()">
+        ANALIZAR →
+      </button>
+    </div>
+    <div class="examples">
+      <span class="ex-tag" onclick="setTicker('NVDA')">NVDA</span>
+      <span class="ex-tag" onclick="setTicker('AAPL')">AAPL</span>
+      <span class="ex-tag" onclick="setTicker('TSLA')">TSLA</span>
+      <span class="ex-tag" onclick="setTicker('AMZN')">AMZN</span>
+      <span class="ex-tag" onclick="setTicker('MSFT')">MSFT</span>
+      <span class="ex-tag" onclick="setTicker('META')">META</span>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- LOADING -->
+    <div id="loading">
+      <div class="loading-ticker" id="loading-ticker">NVDA</div>
+      <div class="loading-msg" id="loading-msg">Buscando noticias recientes...</div>
+      <div class="loading-bar"><div class="loading-fill"></div></div>
+    </div>
+
+    <!-- ERROR -->
+    <div id="error">
+      <div class="error-icon">⚠️</div>
+      <div class="error-msg">Ticker no encontrado</div>
+      <div class="error-sub" id="error-sub">Comprueba que el ticker es correcto e inténtalo de nuevo.</div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="report">
+
+      <!-- Header -->
+      <div class="report-header anim" style="animation-delay:.0s">
+        <div class="report-meta">
+          <div>
+            <div class="report-ticker-big" id="r-ticker">NVDA</div>
+            <div class="report-company" id="r-company">NVIDIA Corporation</div>
+          </div>
+          <div class="report-date" id="r-date"></div>
+        </div>
+        <div id="r-sentiment-badge" class="sentiment-badge">
+          <span class="sentiment-icon" id="r-sentiment-icon">🔥</span>
+          <span class="sentiment-label" id="r-sentiment-label">MUY ALCISTA</span>
+          <span class="sentiment-score" id="r-sentiment-score">87/100</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">Sentimiento</span>
+          <div class="score-bar"><div class="score-fill" id="r-score-fill" style="width:0%"></div></div>
+          <span class="score-val" id="r-score-val">87</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">Momentum</span>
+          <div class="score-bar"><div class="score-fill" id="r-momentum-fill" style="width:0%"></div></div>
+          <span class="score-val" id="r-momentum-val">74</span>
+        </div>
+        <div class="score-row">
+          <span class="score-label">Riesgo</span>
+          <div class="score-bar"><div class="score-fill" id="r-risk-fill" style="width:0%"></div></div>
+          <span class="score-val" id="r-risk-val">42</span>
+        </div>
+      </div>
+
+      <!-- Veredicto (hook) -->
+      <div class="card anim" style="animation-delay:.08s">
+        <div class="card-label">⚡ El veredicto</div>
+        <div class="verdict-text" id="r-verdict"></div>
+      </div>
+
+      <!-- Análisis principal -->
+      <div class="card anim" style="animation-delay:.14s">
+        <div class="card-label">📊 Qué está pasando</div>
+        <div class="body-text" id="r-analysis"></div>
+      </div>
+
+      <!-- Noticias -->
+      <div class="card anim" style="animation-delay:.20s">
+        <div class="card-label">📰 Noticias que mueven el precio</div>
+        <div class="news-list" id="r-news"></div>
+      </div>
+
+      <!-- Catalizadores -->
+      <div class="card anim" style="animation-delay:.26s">
+        <div class="card-label">🎯 Catalizadores</div>
+        <div class="catalysts-grid" id="r-catalysts"></div>
+      </div>
+
+      <!-- Lo que haría yo -->
+      <div class="card anim" style="animation-delay:.32s">
+        <div class="card-label">💡 Lo que yo haría</div>
+        <div class="body-text" id="r-opinion"></div>
+      </div>
+
+      <!-- CTA engagement -->
+      <div class="cta-card anim" style="animation-delay:.38s">
+        <div class="cta-question" id="r-question"></div>
+        <button class="new-search-btn" onclick="resetSearch()">
+          ANALIZAR OTRA ACCIÓN →
+        </button>
+      </div>
+
+      <p class="disclaimer">
+        Esto no es asesoramiento financiero. Es mi opinión basada en noticias públicas.<br>
+        Haz tu propio análisis antes de invertir. <strong style="color:#555">finanzers</strong>
+      </p>
+
+    </div>
+  </div>
+
+<script>
+// ─────────────────────────────────────────────────
+//  HELPERS
+// ─────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+
+function setTicker(t) {
+  $('ticker-input').value = t;
+  $('ticker-input').focus();
+}
+
+function resetSearch() {
+  $('report').style.display = 'none';
+  $('error').style.display  = 'none';
+  $('ticker-input').value   = '';
+  $('ticker-input').focus();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function showLoading(ticker) {
+  $('loading-ticker').textContent = ticker.toUpperCase();
+  const msgs = [
+    'Buscando noticias recientes...',
+    'Analizando el sentimiento de mercado...',
+    'Leyendo entre líneas...',
+    'Redactando el informe...',
+  ];
+  let i = 0;
+  $('loading-msg').textContent = msgs[0];
+  const interval = setInterval(() => {
+    i = (i+1) % msgs.length;
+    $('loading-msg').textContent = msgs[i];
+  }, 1800);
+  $('loading')._interval = interval;
+  $('loading').style.display  = 'block';
+  $('report').style.display   = 'none';
+  $('error').style.display    = 'none';
+}
+
+function hideLoading() {
+  clearInterval($('loading')._interval);
+  $('loading').style.display = 'none';
+}
+
+// ─────────────────────────────────────────────────
+//  SENTIMENT CONFIG
+// ─────────────────────────────────────────────────
+function getSentimentConfig(score) {
+  if (score >= 75) return { label:'MUY ALCISTA', icon:'🔥', color:'#22c55e', bg:'rgba(34,197,94,.08)', border:'rgba(34,197,94,.3)' };
+  if (score >= 58) return { label:'ALCISTA',     icon:'📈', color:'#86efac', bg:'rgba(134,239,172,.06)', border:'rgba(134,239,172,.25)' };
+  if (score >= 42) return { label:'NEUTRAL',     icon:'➡️', color:'#FF8C00', bg:'rgba(255,140,0,.08)',  border:'rgba(255,140,0,.3)' };
+  if (score >= 25) return { label:'BAJISTA',     icon:'📉', color:'#f87171', bg:'rgba(248,113,113,.08)', border:'rgba(248,113,113,.25)' };
+  return                  { label:'MUY BAJISTA', icon:'💀', color:'#ef4444', bg:'rgba(239,68,68,.1)',  border:'rgba(239,68,68,.35)' };
+}
+
+// ─────────────────────────────────────────────────
+//  RENDER REPORT
+// ─────────────────────────────────────────────────
+function renderReport(data) {
+  // date
+  const now = new Date();
+  $('r-date').innerHTML = `INFORME · ${now.toLocaleDateString('es-ES',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase()}<br>${now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'})}h`;
+
+  // header
+  $('r-ticker').textContent  = data.ticker;
+  $('r-company').textContent = data.company || '';
+
+  // sentiment badge
+  const cfg = getSentimentConfig(data.sentimentScore);
+  const badge = $('r-sentiment-badge');
+  badge.style.background   = cfg.bg;
+  badge.style.borderColor  = cfg.border;
+  $('r-sentiment-icon').textContent  = cfg.icon;
+  $('r-sentiment-label').textContent = cfg.label;
+  $('r-sentiment-label').style.color = cfg.color;
+  $('r-sentiment-score').textContent = `${data.sentimentScore}/100`;
+
+  // score bars
+  function setBar(fillId, valId, val, color) {
+    $(fillId).style.width      = val+'%';
+    $(fillId).style.background = color;
+    $(valId).textContent       = val;
+    $(valId).style.color       = color;
+  }
+  setBar('r-score-fill',    'r-score-val',    data.sentimentScore, cfg.color);
+  setBar('r-momentum-fill', 'r-momentum-val', data.momentumScore,
+    data.momentumScore >= 60 ? '#22c55e' : data.momentumScore >= 40 ? '#FF8C00' : '#ef4444');
+  setBar('r-risk-fill', 'r-risk-val', data.riskScore,
+    data.riskScore <= 35 ? '#22c55e' : data.riskScore <= 60 ? '#FF8C00' : '#ef4444');
+
+  // verdict (hook)
+  $('r-verdict').textContent = data.verdict;
+
+  // analysis
+  $('r-analysis').innerHTML = data.analysis
+    .split('\n').filter(l=>l.trim())
+    .map(p=>`<p>${p}</p>`).join('');
+
+  // news
+  const newsList = $('r-news');
+  newsList.innerHTML = '';
+  (data.news || []).forEach(n => {
+    const sentiment = n.sentiment === 'positive' ? '#22c55e' : n.sentiment === 'negative' ? '#ef4444' : '#FF8C00';
+    newsList.innerHTML += `
+      <div class="news-item">
+        <div class="news-dot" style="background:${sentiment}"></div>
+        <div>
+          <div class="news-headline">${n.headline}</div>
+          <div class="news-source">${n.source} · ${n.sentiment === 'positive' ? '▲ Positivo' : n.sentiment === 'negative' ? '▼ Negativo' : '→ Neutral'}</div>
+        </div>
+      </div>`;
+  });
+
+  // catalysts
+  const catGrid = $('r-catalysts');
+  catGrid.innerHTML = '';
+  (data.catalysts || []).forEach(c => {
+    const isPos = c.type === 'bull';
+    catGrid.innerHTML += `
+      <div class="catalyst-item" style="border-color:${isPos ? 'rgba(34,197,94,.2)' : 'rgba(239,68,68,.2)'}">
+        <div class="catalyst-type" style="color:${isPos ? '#22c55e' : '#ef4444'}">${isPos ? '🟢 Alcista' : '🔴 Bajista'}</div>
+        <div class="catalyst-text">${c.text}</div>
+      </div>`;
+  });
+
+  // opinion
+  $('r-opinion').innerHTML = data.opinion
+    .split('\n').filter(l=>l.trim())
+    .map(p=>`<p>${p}</p>`).join('');
+
+  // cta question
+  $('r-question').innerHTML = data.question;
+
+  // show
+  $('report').style.display = 'block';
+
+  // re-trigger animations
+  document.querySelectorAll('.anim').forEach(el => {
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  });
+
+  // animate bars after a tick
+  setTimeout(() => {
+    $('r-score-fill').style.width    = data.sentimentScore+'%';
+    $('r-momentum-fill').style.width = data.momentumScore+'%';
+    $('r-risk-fill').style.width     = data.riskScore+'%';
+  }, 200);
+
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+// ─────────────────────────────────────────────────
+//  MAIN ANALYZE FUNCTION
+// ─────────────────────────────────────────────────
+async function analyze() {
+  const ticker = $('ticker-input').value.trim().toUpperCase();
+  if (!ticker) {
+    $('ticker-input').focus();
+    return;
+  }
+
+  const btn = $('search-btn');
+  btn.disabled = true;
+  showLoading(ticker);
+
+  try {
+    const prompt = `Eres el analista de Finanzers. Tu perfil: empleado de banca con pasión por los mercados. Aprendiste invirtiendo y perdiendo dinero real. Valoras el tiempo libre por encima del dinero. Anti-gurú, anti-postureo. Hablas como un amigo que sabe más que tú de esto.
+
+Tu estilo:
+- Directo y sin rodeos
+- Frases cortas. Sin palabrería innecesaria
+- Honesto y vulnerable cuando toca
+- Opinión fuerte pero con argumento detrás
+- Hook potente siempre en la primera línea
+- Cierre siempre con pregunta para generar engagement
+
+Busca las noticias más recientes sobre la acción ${ticker} y genera un informe de análisis de sentimiento de mercado.
+
+Responde ÚNICAMENTE con un JSON válido con esta estructura exacta (sin markdown, sin explicaciones, solo el JSON):
+{
+  "ticker": "${ticker}",
+  "company": "nombre completo de la empresa",
+  "sentimentScore": número del 0 al 100 (0=muy bajista, 100=muy alcista),
+  "momentumScore": número del 0 al 100,
+  "riskScore": número del 0 al 100 (0=bajo riesgo, 100=alto riesgo),
+  "verdict": "frase de hook directa y brutal en una sola línea, máximo 15 palabras, que resuma el veredicto",
+  "analysis": "3-4 párrafos cortos separados por salto de línea. Qué está pasando con esta acción según las noticias recientes. Estilo Finanzers: directo, frases cortas, sin postureo. Menciona datos concretos.",
+  "news": [
+    {"headline": "titular de noticia real y reciente", "source": "fuente", "sentiment": "positive|negative|neutral"},
+    {"headline": "titular", "source": "fuente", "sentiment": "positive|negative|neutral"},
+    {"headline": "titular", "source": "fuente", "sentiment": "positive|negative|neutral"},
+    {"headline": "titular", "source": "fuente", "sentiment": "positive|negative|neutral"}
+  ],
+  "catalysts": [
+    {"type": "bull", "text": "catalizador alcista concreto"},
+    {"type": "bull", "text": "catalizador alcista concreto"},
+    {"type": "bear", "text": "riesgo bajista concreto"},
+    {"type": "bear", "text": "riesgo bajista concreto"}
+  ],
+  "opinion": "2 párrafos. Lo que haría yo con esta acción ahora mismo. Honesto, con mi opinión personal. Puede ser comprar, vender, esperar o no tocarla. Con argumento detrás. Termina mencionando que cada uno debe hacer su propio análisis.",
+  "question": "Una pregunta de engagement al lector relacionada con ${ticker}. Ejemplo: '¿Tú tienes <TICKER> en cartera o la tienes en el punto de mira?' — con <span> alrededor del ticker"
+}`;
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
+
+    const data = await response.json();
+
+    // extract text from content blocks
+    const text = data.content
+      .filter(b => b.type === 'text')
+      .map(b => b.text)
+      .join('');
+
+    // parse JSON — strip any markdown fences just in case
+    const clean = text.replace(/```json|```/g, '').trim();
+    const jsonMatch = clean.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found in response');
+
+    const reportData = JSON.parse(jsonMatch[0]);
+
+    hideLoading();
+    renderReport(reportData);
+
+  } catch(err) {
+    console.error(err);
+    hideLoading();
+    $('error-sub').textContent = `Error al analizar ${ticker}. Comprueba el ticker e inténtalo de nuevo.`;
+    $('error').style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
